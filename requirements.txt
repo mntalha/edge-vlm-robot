@@ -1,0 +1,19 @@
+# Core (training machine with an NVIDIA GPU, or any CPU for the tiny model)
+torch>=2.1
+numpy
+pillow
+matplotlib
+jupyter
+
+# Export / deployment checks
+onnx
+onnxruntime
+
+# Notebook 04 (pretrained small VLMs + LoRA) - GPU machine
+transformers>=4.46
+accelerate
+peft
+num2words
+
+# Tests
+pytest

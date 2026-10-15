@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.ipynb_checkpoints/
+.pytest_cache/
+
+# Artifacts produced by notebooks/scripts
+checkpoints/
+exports/
+engines/
+*.onnx
+*.engine
+*.plan
+*.gguf
+wandb/
+runs/
+
+# OS / editors
+.DS_Store
+.vscode/
+.idea/

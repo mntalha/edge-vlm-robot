@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "edge-vlm"
+version = "0.1.0"
+description = "Learn-by-building a small, optimized vision-language model for a fetch robot on NVIDIA Jetson"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "torch>=2.1",
+    "numpy",
+    "pillow",
+]
+
+[project.optional-dependencies]
+notebooks = ["jupyter", "matplotlib"]
+export = ["onnx", "onnxruntime"]
+hf = ["transformers>=4.46", "accelerate", "peft", "datasets", "num2words"]
+dev = ["pytest", "onnx", "onnxruntime", "nbclient", "nbformat", "ipykernel", "matplotlib"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
