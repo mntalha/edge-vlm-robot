@@ -26,7 +26,8 @@ This is the context another agent (or you, later) needs to continue this project
 3. Wrote the `edge_vlm` package (`src/edge_vlm/`): hardware profiles, memory budgeting, domain, actions/guardrail, toy simulator, expert + agent, dataset generation, TinyVLM model, training, quantization, ONNX export.
 4. **One local smoke test was run before the user asked to stop running things** (results below). The user then objected. The training run was stopped, and the local `.venv`, `/tmp` checkpoint, egg-info and `__pycache__` were deleted. **Nothing else has been executed locally since.**
 5. Wrote tests, scripts, Jetson deploy files (TensorRT build script, TensorRT Python runner, setup notes), a ROS 2 planner node skeleton, a CI workflow, 8 notebooks (00-07), the README and this file.
-6. Initial commit and push to `github.com/mntalha/edge-vlm-robot`. CI runs the tests on GitHub.
+6. Initial commit and push to `github.com/mntalha/edge-vlm-robot`. The first CI run had 36/37 passing. ONNX export failed because `is_causal` in SDPA was derived from a traced shape (`T > 1`).
+7. Fixed it: `causal = past is None` in `GQAttention` (a 1x1 causal mask is harmless). **CI is now green: 37/37 tests pass and all 8 notebooks validate (torch 2.14.1+cpu, Python 3.11).**
 
 ### Smoke-test results (only local run, Python 3.9 / torch 2.8 CPU on an M2 that was heavily loaded)
 - Expert policy: **100% success**, 4.6 avg steps over 200 episodes.
@@ -51,17 +52,17 @@ This is the context another agent (or you, later) needs to continue this project
 | Item | Status |
 |---|---|
 | Package imports, expert, data generation, a training step | ✅ verified locally (smoke test) |
-| `pytest` suite (domain, world/agent, model incl. KV-cache equivalence and pixel-shuffle layout, memory/quantization, train smoke + checkpoint roundtrip, ONNX export vs onnxruntime) | ⏳ runs in **GitHub Actions**. Check the latest run with `gh run list -R mntalha/edge-vlm-robot` |
-| Notebook JSON validity + code cells compile | ⏳ CI step "Validate notebooks" |
+| `pytest` suite (domain, world/agent, model incl. KV-cache equivalence and pixel-shuffle layout, memory/quantization, train smoke + checkpoint roundtrip, ONNX export vs onnxruntime) | ✅ 37/37 pass in GitHub Actions (torch 2.14 CPU) |
+| Notebook JSON validity + code cells compile | ✅ CI |
 | Notebook *execution* (03 training accuracy, 05 numbers) | ❌ not run. Do it on the user's GPU machine |
-| ONNX export with newest torch (classic exporter may be removed; there is a fallback to `dynamo=True`, which needs `onnxscript`) | ⏳ CI |
+| ONNX export + onnxruntime match (torch 2.14) | ✅ CI |
 | Notebook 04 (HF transformers / peft API details for SmolVLM) | ❌ not run; needs GPU + internet |
 | TensorRT engine build / `trt_runner.py` / int64 `input_ids` handling in TRT 10 | ❌ needs a Jetson |
 | ROS 2 node (`deploy/ros2/vlm_planner_node.py`) | ❌ skeleton, untested |
 
 ## 6. Known risks / TODO for the next agent
 
-1. **If CI fails, fix it first.** Likely spots: ONNX export on the newest torch (`src/edge_vlm/export.py::_export`), `test_train_smoke` loss-decrease assertion (tiny model, 6 steps), and notebook JSON typos.
+1. Keep CI green. Any change to `model.py` attention must keep control flow independent of traced tensor shapes (ONNX export).
 2. On the GPU machine, run notebook 03 and record real accuracy and closed-loop success. Tune `EPISODES`/`EPOCHS`/`lr` if `pick` accuracy is low (options: lower `pixel_shuffle` to 1, more vision layers, larger images).
 3. Notebook 04: confirm the `AutoModelForImageTextToText` import, the chat template, and the label masking with the installed `transformers` version. Report LoRA results.
 4. Jetson: confirm `trtexec` handles int64 `input_ids` (otherwise cast to int32 in `DecoderWrapper` and re-export). Add KV-cache I/O to the decoder export if needed.
