@@ -206,9 +206,10 @@ class GQAttention(nn.Module):
         present = (k, v)  # cache stores only kv_heads -> this is the GQA memory win
         rep = self.h // self.kvh
         k, v = k.repeat_interleave(rep, dim=1), v.repeat_interleave(rep, dim=1)
-        # Causal mask only needed when processing >1 new token without history
-        # (prefill / training). A single decode step may attend to everything.
-        causal = past is None and T > 1
+        # Causal mask for prefill/training (no history). A decode step with a
+        # cache attends to everything. Depending only on `past` (not on the
+        # traced length T) keeps this a plain Python bool for ONNX export.
+        causal = past is None
         a = F.scaled_dot_product_attention(
             q, k, v, is_causal=causal, dropout_p=self.dropout if self.training else 0.0
         )
